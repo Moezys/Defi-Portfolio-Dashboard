@@ -40,7 +40,7 @@ A comprehensive decentralized finance (DeFi) portfolio tracking application buil
 1. **Clone the repository**
    ```bash
    git clone https://github.com/Moezys/Defi-Portfolio-Dashboard.git
-   cd Defi-Portfolio-Dashboard
+      cd Defi-Portfolio-Dashboard
    ```
 
 2. **Install dependencies**

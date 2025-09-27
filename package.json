@@ -2,6 +2,15 @@
   "name": "defi-portfolio-dashboard",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://github.com/Moezys/Defi-Portfolio-Dashboard",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Moezys/Defi-Portfolio-Dashboard.git"
+  },
+  "author": "Moezys",
+  "bugs": {
+    "url": "https://github.com/Moezys/Defi-Portfolio-Dashboard/issues"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
