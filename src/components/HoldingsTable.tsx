@@ -73,7 +73,7 @@ export default function HoldingsTable({ holdings, isLoading }: HoldingsTableProp
                     </span>
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900" data-testid={`token-symbol-${holding.symbol.toLowerCase()}`}>{holding.symbol}</div>
+                    <div className="font-medium text-gray-900">{holding.symbol}</div>
                     <div className="text-sm text-gray-500">
                       {formatNumber(holding.amount, 6)} tokens
                     </div>
@@ -151,7 +151,7 @@ export default function HoldingsTable({ holdings, isLoading }: HoldingsTableProp
                           {holding.symbol.substring(0, 2)}
                         </span>
                       </div>
-                      <div className="font-medium text-gray-900" data-testid={`token-symbol-${holding.symbol.toLowerCase()}`}>{holding.symbol}</div>
+                      <div className="font-medium text-gray-900">{holding.symbol}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">

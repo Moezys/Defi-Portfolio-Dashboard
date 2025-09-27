@@ -75,9 +75,9 @@ ETH,1.5,2024-02-01,3000`;
     // Wait for import success message
     await expect(page.getByTestId('import-success-message')).toBeVisible({ timeout: 10000 });
     
-    // Check that holdings are displayed with more specific selectors
-    await expect(page.getByTestId('token-symbol-btc')).toBeVisible();
-    await expect(page.getByTestId('token-symbol-eth')).toBeVisible();
+    // Check that holdings are displayed - use parent containers which are unique
+    await expect(page.getByTestId('holding-mobile-btc').or(page.getByTestId('holding-row-btc'))).toBeVisible();
+    await expect(page.getByTestId('holding-mobile-eth').or(page.getByTestId('holding-row-eth'))).toBeVisible();
   });
 
   test('should show validation errors for invalid CSV', async ({ page }) => {
@@ -174,7 +174,7 @@ BTC,0.1,2024-01-15,45000`;
     }, csvContent);
     
     await expect(page.getByTestId('import-success-message')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('token-symbol-btc')).toBeVisible();
+    await expect(page.getByTestId('holding-mobile-btc')).toBeVisible();
   });
 });
 
