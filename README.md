@@ -174,11 +174,11 @@ This app is optimized for Vercel deployment:
 
 2. **Manual Deployment**:
    ```bash
-   npm run build
-   npx vercel --prod
+   npm install -g vercel
+   vercel --prod
    ```
 
-**Live Demo**: [https://defi-portfolio-dashboard.vercel.app](https://defi-portfolio-dashboard.vercel.app)
+**Live Demo**: [https://defi-portfolio-dashboard-moezys.vercel.app](https://defi-portfolio-dashboard-moezys.vercel.app)
 
 ### Build for Production
 ```bash
