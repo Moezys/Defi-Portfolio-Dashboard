@@ -1,0 +1,230 @@
+import { test, expect } from '@playwright/test';
+import path from 'path';
+
+test.describe('DeFi Portfolio Dashboard', () => {
+  test.beforeEach(async ({ page }) => {
+    // Start with a fresh state
+    await page.goto('/');
+    await page.evaluate(() => {
+      localStorage.clear();
+    });
+  });
+
+  test('should display login form initially', async ({ page }) => {
+    await page.goto('/');
+    await expect(page).toHaveTitle(/DeFi Portfolio/);
+    await expect(page.locator('h2')).toContainText('DeFi Portfolio');
+    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await expect(page.locator('button[type="submit"]')).toBeVisible();
+  });
+
+  test('should login with email and show dashboard', async ({ page }) => {
+    await page.goto('/');
+    
+    // Fill in email and submit
+    await page.fill('input[type="email"]', 'test@example.com');
+    await page.click('button[type="submit"]');
+    
+    // Wait for loading and then dashboard to appear
+    await expect(page.locator('[data-testid="dashboard"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('h1')).toContainText('DeFi Portfolio');
+  });
+
+  test('should show empty state when no holdings', async ({ page }) => {
+    // Login first
+    await page.goto('/');
+    await page.fill('input[type="email"]', 'test@example.com');
+    await page.click('button[type="submit"]');
+    await expect(page.locator('h1')).toContainText('DeFi Portfolio');
+    
+    // Check empty states
+    await expect(page.locator('text=No holdings found')).toBeVisible();
+    await expect(page.locator('text=$0.00').first()).toBeVisible();
+  });
+
+  test('CSV import flow', async ({ page }) => {
+    // Login first
+    await page.goto('/');
+    await page.fill('input[type="email"]', 'test@example.com');
+    await page.click('button[type="submit"]');
+    await expect(page.locator('h1')).toContainText('DeFi Portfolio');
+    
+    // Test CSV import
+    const csvContent = `symbol,amount,acquisition_date,acquisition_price
+BTC,0.1,2024-01-15,45000
+ETH,1.5,2024-02-01,3000`;
+    
+    // Create a temporary file
+    const fileInput = page.locator('input[type="file"]');
+    
+    // Create a file-like object
+    await page.evaluate(async (content) => {
+      const blob = new Blob([content], { type: 'text/csv' });
+      const file = new File([blob], 'test-holdings.csv', { type: 'text/csv' });
+      
+      // Trigger file input change
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (input) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }, csvContent);
+    
+    // Wait for import success message
+    await expect(page.locator('text=Import Successful')).toBeVisible({ timeout: 10000 });
+    
+    // Check that holdings are displayed
+    await expect(page.locator('text=BTC')).toBeVisible();
+    await expect(page.locator('text=ETH')).toBeVisible();
+  });
+
+  test('should show validation errors for invalid CSV', async ({ page }) => {
+    // Login first
+    await page.goto('/');
+    await page.fill('input[type="email"]', 'test@example.com');
+    await page.click('button[type="submit"]');
+    await expect(page.locator('h1')).toContainText('DeFi Portfolio');
+    
+    // Test invalid CSV
+    const invalidCsv = `symbol,amount,acquisition_date
+BTC,invalid_amount,2024-01-15
+,1.5,2024-02-01`;
+    
+    await page.evaluate(async (content) => {
+      const blob = new Blob([content], { type: 'text/csv' });
+      const file = new File([blob], 'invalid.csv', { type: 'text/csv' });
+      
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (input) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }, invalidCsv);
+    
+    // Wait for validation errors
+    await expect(page.locator('text=Validation Errors')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('should download sample CSV', async ({ page }) => {
+    // Login first
+    await page.goto('/');
+    await page.fill('input[type="email"]', 'test@example.com');
+    await page.click('button[type="submit"]');
+    await expect(page.locator('h1')).toContainText('DeFi Portfolio');
+    
+    // Set up download promise before clicking
+    const downloadPromise = page.waitForEvent('download');
+    
+    // Click sample CSV download button
+    await page.click('text=Sample CSV');
+    
+    // Wait for download
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe('sample-holdings.csv');
+  });
+
+  test('should logout successfully', async ({ page }) => {
+    // Login first
+    await page.goto('/');
+    await page.fill('input[type="email"]', 'test@example.com');
+    await page.click('button[type="submit"]');
+    await expect(page.locator('h1')).toContainText('DeFi Portfolio');
+    
+    // Click logout
+    await page.click('text=Sign out');
+    
+    // Should return to login page
+    await expect(page.locator('h2')).toContainText('DeFi Portfolio');
+    await expect(page.locator('input[type="email"]')).toBeVisible();
+  });
+
+  test('mobile responsive layout', async ({ page }) => {
+    // Set mobile viewport
+    await page.setViewportSize({ width: 375, height: 667 });
+    
+    // Login
+    await page.goto('/');
+    await page.fill('input[type="email"]', 'test@example.com');
+    await page.click('button[type="submit"]');
+    await expect(page.locator('h1')).toContainText('DeFi Portfolio');
+    
+    // Check mobile layout elements are visible
+    await expect(page.locator('header')).toBeVisible();
+    await expect(page.locator('[data-testid="portfolio-overview"]').first()).toBeVisible();
+    
+    // Import some data to test mobile tables
+    const csvContent = `symbol,amount,acquisition_date,acquisition_price
+BTC,0.1,2024-01-15,45000`;
+    
+    await page.evaluate(async (content) => {
+      const blob = new Blob([content], { type: 'text/csv' });
+      const file = new File([blob], 'test.csv', { type: 'text/csv' });
+      
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (input) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }, csvContent);
+    
+    await expect(page.locator('text=Import Successful')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=BTC')).toBeVisible();
+  });
+});
+
+test.describe('Accessibility', () => {
+  test('should have proper ARIA labels and roles', async ({ page }) => {
+    await page.goto('/');
+    
+    // Check login form accessibility
+    const emailInput = page.locator('input[type="email"]');
+    await expect(emailInput).toHaveAttribute('required');
+    await expect(emailInput).toHaveAttribute('autoComplete', 'email');
+    
+    const submitButton = page.locator('button[type="submit"]');
+    await expect(submitButton).toBeVisible();
+    
+    // Login to test dashboard accessibility
+    await page.fill('input[type="email"]', 'test@example.com');
+    await page.click('button[type="submit"]');
+    await expect(page.locator('h1')).toContainText('DeFi Portfolio');
+    
+    // Check for proper heading hierarchy
+    await expect(page.locator('h1')).toHaveCount(1);
+    const h2Count = await page.locator('h2').count();
+    expect(h2Count).toBeGreaterThan(0);
+    
+    // Check table accessibility
+    const tables = page.locator('table');
+    if (await tables.count() > 0) {
+      const thCount = await tables.first().locator('thead th').count();
+      expect(thCount).toBeGreaterThan(0);
+    }
+  });
+
+  test('should be navigable with keyboard', async ({ page }) => {
+    await page.goto('/');
+    
+    // Tab through login form
+    await page.keyboard.press('Tab');
+    await expect(page.locator('input[type="email"]')).toBeFocused();
+    
+    await page.keyboard.press('Tab');
+    await expect(page.locator('button[type="submit"]')).toBeFocused();
+    
+    // Fill and submit with keyboard
+    await page.keyboard.press('Shift+Tab'); // Back to email input
+    await page.keyboard.type('test@example.com');
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Enter');
+    
+    // Should login successfully
+    await expect(page.locator('h1')).toContainText('DeFi Portfolio');
+  });
+});

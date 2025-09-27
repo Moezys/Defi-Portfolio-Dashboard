@@ -1,103 +1,185 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import LoginForm from '@/components/LoginForm';
+import Header from '@/components/Header';
+import PortfolioOverview from '@/components/PortfolioOverview';
+import CSVImport from '@/components/CSVImport';
+import HoldingsTable from '@/components/HoldingsTable';
+import ProfitLossChart from '@/components/ProfitLossChart';
+import TransactionsTable from '@/components/TransactionsTable';
+import { Holding, Portfolio, Transaction } from '@/types';
+import { calculatePortfolioValue, calculatePnLHistory } from '@/lib/portfolio';
+
+// Mock transactions data
+const MOCK_TRANSACTIONS: Transaction[] = [
+  {
+    id: '1',
+    type: 'buy',
+    symbol: 'BTC',
+    amount: 0.5,
+    price: 42000,
+    date: '2024-01-15T10:30:00Z',
+    total: 21000
+  },
+  {
+    id: '2',
+    type: 'buy',
+    symbol: 'ETH',
+    amount: 2.5,
+    price: 2800,
+    date: '2024-02-01T14:15:00Z',
+    total: 7000
+  },
+  {
+    id: '3',
+    type: 'sell',
+    symbol: 'BTC',
+    amount: 0.1,
+    price: 45000,
+    date: '2024-02-15T09:45:00Z',
+    total: 4500
+  },
+  {
+    id: '4',
+    type: 'buy',
+    symbol: 'ADA',
+    amount: 1000,
+    price: 0.65,
+    date: '2024-02-20T16:20:00Z',
+    total: 650
+  },
+  {
+    id: '5',
+    type: 'buy',
+    symbol: 'DOT',
+    amount: 100,
+    price: 8.5,
+    date: '2024-03-01T11:10:00Z',
+    total: 850
+  },
+  {
+    id: '6',
+    type: 'sell',
+    symbol: 'ETH',
+    amount: 0.5,
+    price: 3200,
+    date: '2024-03-10T13:30:00Z',
+    total: 1600
+  },
+];
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const { user, isLoading: authLoading } = useAuth();
+  const [holdings, setHoldings] = useState<Holding[]>([]);
+  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
+  const [chartData, setChartData] = useState<Array<{ date: string; total_value: number; profit_loss: number }>>([]);
+  const [isLoadingPortfolio, setIsLoadingPortfolio] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  // Load saved holdings on component mount
+  useEffect(() => {
+    if (user) {
+      const savedHoldings = localStorage.getItem('defi-holdings');
+      if (savedHoldings) {
+        try {
+          const parsedHoldings = JSON.parse(savedHoldings);
+          setHoldings(parsedHoldings);
+        } catch (error) {
+          console.error('Error parsing saved holdings:', error);
+        }
+      }
+    }
+  }, [user]);
+
+  // Calculate portfolio value when holdings change
+  useEffect(() => {
+    if (holdings.length > 0) {
+      setIsLoadingPortfolio(true);
+      calculatePortfolioValue(holdings)
+        .then(async (portfolioData) => {
+          setPortfolio(portfolioData);
+          
+          // Calculate historical P/L data
+          const historyData = await calculatePnLHistory(portfolioData.holdings);
+          setChartData(historyData);
+          
+          setIsLoadingPortfolio(false);
+        })
+        .catch(error => {
+          console.error('Error calculating portfolio:', error);
+          setIsLoadingPortfolio(false);
+        });
+    } else {
+      setPortfolio(null);
+      setChartData([]);
+    }
+  }, [holdings]);
+
+  const handleImportHoldings = (newHoldings: Holding[]) => {
+    setHoldings(newHoldings);
+    localStorage.setItem('defi-holdings', JSON.stringify(newHoldings));
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginForm />;
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50" data-testid="dashboard">
+      <Header />
+      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Portfolio Overview */}
+        <div data-testid="portfolio-overview">
+          <PortfolioOverview 
+            portfolio={portfolio} 
+            isLoading={isLoadingPortfolio} 
+          />
+        </div>
+
+        {/* CSV Import/Export */}
+        <div className="mb-8">
+          <CSVImport 
+            onImport={handleImportHoldings}
+            currentHoldings={portfolio?.holdings || []}
+          />
+        </div>
+
+        {/* P/L Chart */}
+        <div className="mb-8">
+          <ProfitLossChart 
+            data={chartData}
+            isLoading={isLoadingPortfolio}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Holdings Table */}
+          <div className="lg:col-span-2">
+            <HoldingsTable 
+              holdings={portfolio?.holdings || []}
+              isLoading={isLoadingPortfolio}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          </div>
+          
+          {/* Transactions Table */}
+          <div className="lg:col-span-2">
+            <TransactionsTable 
+              transactions={MOCK_TRANSACTIONS}
+              isLoading={false}
+            />
+          </div>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
   );
 }
