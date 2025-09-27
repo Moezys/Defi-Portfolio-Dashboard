@@ -84,7 +84,7 @@ export default function CSVImport({ onImport, currentHoldings }: CSVImportProps)
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6" data-testid="csv-import">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-lg font-semibold text-gray-900">Import/Export Holdings</h2>
         <div className="flex space-x-2">
@@ -115,6 +115,7 @@ export default function CSVImport({ onImport, currentHoldings }: CSVImportProps)
             onChange={handleFileUpload}
             className="hidden"
             id="csv-upload"
+            data-testid="csv-file-input"
           />
           <label
             htmlFor="csv-upload"
@@ -132,7 +133,7 @@ export default function CSVImport({ onImport, currentHoldings }: CSVImportProps)
 
         {/* Success Message */}
         {importSuccess && (
-          <div className="bg-green-50 border border-green-200 rounded-md p-4">
+          <div className="bg-green-50 border border-green-200 rounded-md p-4" data-testid="import-success-message">
             <div className="flex items-center">
               <CheckCircle className="h-5 w-5 text-green-400 mr-2" />
               <div className="flex-1">
@@ -151,7 +152,7 @@ export default function CSVImport({ onImport, currentHoldings }: CSVImportProps)
 
         {/* Validation Errors */}
         {validationErrors.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="bg-red-50 border border-red-200 rounded-md p-4" data-testid="validation-errors">
             <div className="flex items-start">
               <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 mr-2 flex-shrink-0" />
               <div className="flex-1">

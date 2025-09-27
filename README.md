@@ -161,24 +161,7 @@ The E2E test suite covers:
 - Accessibility compliance
 - Error handling and validation
 
-## 🚀 Deployment
-
-### Deploy on Vercel (Recommended)
-
-This app is optimized for Vercel deployment:
-
-1. **Automatic Deployment**:
-   - Connect your GitHub repository to Vercel
-   - Vercel will automatically detect it's a Next.js project
-   - Deploy with zero configuration
-
-2. **Manual Deployment**:
-   ```bash
-   npm install -g vercel
-   vercel --prod
-   ```
-
-**Live Demo**: [https://defi-portfolio-dashboard-moezys.vercel.app](https://defi-portfolio-dashboard-moezys.vercel.app)
+**Live Demo**: [https://defi-portfolio-dashboard-.vercel.app](https://defi-portfolio-dashboard.vercel.app)
 
 ### Build for Production
 ```bash
@@ -219,14 +202,6 @@ The application is fully responsive and optimized for mobile devices:
 - Tax reporting features
 - Dark mode support
 - Multi-currency support
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## 📄 License
 
